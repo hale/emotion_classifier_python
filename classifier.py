@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import re, random, math, collections, itertools
+import re, random, math, collections, itertools, pdb
 
 #------------- Function Definitions ---------------------
 
-def readFiles(sentimentDictionary,sentencesTrain,sentencesTest,sentencesNokia):
+def readFiles(sentimentDictionary,sentencesTrain,sentencesTest):
 
     #reading pre-labeled movie reviews and splitting into lines
 
@@ -39,41 +39,39 @@ def readFiles(sentimentDictionary,sentencesTrain,sentencesTest,sentencesNokia):
 
     sentimentDictionary={} #initialise dictionary
 
-    for sentences in angrySentences:
+    for sentence in angrySentences:
         sentimentDictionary[sentence] = "angry"
 
-    for sentences in disgustedSentences:
+    for sentence in disgustedSentences:
         sentimentDictionary[sentence] = "disgusted"
 
-    for sentences in fearfulSentences:
+    for sentence in fearfulSentences:
         sentimentDictionary[sentence] = "fearful"
 
-    for sentences in happySentences:
+    for sentence in happySentences:
         sentimentDictionary[sentence] = "happy"
 
-    for sentences in sadSentences:
+    for sentence in sadSentences:
         sentimentDictionary[sentence] = "sad"
 
-    for sentences in surprisedSentences:
+    for sentence in surprisedSentences:
         sentimentDictionary[sentence] = "surprised"
 
     #create Training and Test Datsets
 
     #create 90-10 split of training and test data, with sentiment labels
-    sentenceTrain={}
-    sentimentTest={}
-
     for sentence, sentiment in sentimentDictionary.iteritems():
         if random.randint(1,10)<2:
             sentencesTest[sentence] = sentiment
         else:
             sentencesTrain[sentence] = sentiment
 
+
 #----------------------------End of data initialisation ----------------#
 
 #calculates p(W|Positive), p(W|Negative) and p(W) for all words in training data
 def trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
-        pWordHappy, pWordSad, pWordSusprised, pWord):
+        pWordHappy, pWordSad, pWordSurprised, pWord):
 
     angryFeatures = []
     disgustedFeatures = []
@@ -101,6 +99,9 @@ def trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
 
     #iterate through each sentence/sentiment pair in the training data
     for sentence, sentiment in sentencesTrain.iteritems():
+        if sentence == '':
+            continue
+
         wordList = re.findall(r"[\w']+", sentence) # get word list
 
         #TO DO:
@@ -221,7 +222,7 @@ def mostUseful(pWordPos, pWordNeg, pWord, n):
 #  pWordNeg is dictionary storing p(word|negative) for each word
 #  pWord is dictionary storing p(word)
 #  pPos is a real number containing the fraction of positive reviews in the dataset
-def testBayes(sentencesTrain, dataName, pWordAngry, pWordDisgusted,
+def testBayes(sentencesTest, dataName, pWordAngry, pWordDisgusted,
         pWordFearful, pWordHappy, pWordSad, pWordSurprise, pWord,
         pAngry, pDisgusted, pFearful, pHappy, pSad, pSurprised):
 
@@ -243,8 +244,12 @@ def testBayes(sentencesTrain, dataName, pWordAngry, pWordDisgusted,
     correctSad=0
     correctSurprised=0
 
+
     #for each sentence, sentiment pair in the dataset
     for sentence, sentiment in sentencesTest.iteritems():
+        if sentence == '':
+            continue
+
         wordList = re.findall(r"[\w']+", sentence)#collect all words
 
         #TO DO: Exactly what you did in the training function:
@@ -255,6 +260,7 @@ def testBayes(sentencesTrain, dataName, pWordAngry, pWordDisgusted,
         for bigram in zip(wordList, wordList[1:]):
             bigramList.append(bigram[0] + '_' + bigram[1])
         bigramList.append(wordList[-1] + '</sen>') # add end of sentence
+
 
         for word in bigramList:
             if pWord.has_key(word):
@@ -327,9 +333,6 @@ def testBayes(sentencesTrain, dataName, pWordAngry, pWordDisgusted,
     acc=correct/float(total)
     print dataName + " Accuracy (All)=%0.2f" % acc + " (%d" % correct + "/%d" % total + ")"
 
-    accpos=correctpos/float(totalpos)
-    accneg=correctneg/float(totalneg)
-
     accAngry = correctAngry / float(totalAngry)
     accDisgusted = correctDisgusted / float(totalDisgusted)
     accFearful = correctFearful / float(totalFearful)
@@ -351,7 +354,6 @@ def testBayes(sentencesTrain, dataName, pWordAngry, pWordDisgusted,
 sentimentDictionary={} # {} initialises a dictionary [hash function]
 sentencesTrain={}
 sentencesTest={}
-sentencesNokia={}
 
 #initialise datasets and dictionaries
 readFiles(sentimentDictionary,sentencesTrain,sentencesTest)
@@ -364,16 +366,17 @@ pWordHappy={} # p(W|Happy)
 pWordSad={} # p(W|Sad)
 pWordSurprised={} # p(W|Surprised)
 
+
 #build conditional probabilities using training data
 trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
-        pWordHappy, pWordSad, pWordSusprised, pWord)
+        pWordHappy, pWordSad, pWordSurprised, pWord)
 
 #run naive bayes classifier on datasets
 print "Naive Bayes"
 testBayes(sentencesTrain,  "Sentences (Train Data)\t", pWordAngry,
         pWordDisgusted, pWordFearful, pWordHappy, pWordSad,
-        pWordSurprise, pWord, 0.166, 0.166, 0.166, 0.166, 0.166, 0.166)
+        pWordSurprised, pWord, 0.166, 0.166, 0.166, 0.166, 0.166, 0.166)
 
 testBayes(sentencesTest,  "Sentences (Test Data)\t", pWordAngry,
         pWordDisgusted, pWordFearful, pWordHappy, pWordSad,
-        pWordSurprise, pWord, 0.166, 0.166, 0.166, 0.166, 0.166, 0.166)
+        pWordSurprised, pWord, 0.166, 0.166, 0.166, 0.166, 0.166, 0.166)
