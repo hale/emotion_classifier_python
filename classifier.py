@@ -1,78 +1,74 @@
 #!/usr/bin/env python
 import re, random, math, collections, itertools
 
-
-
 #------------- Function Definitions ---------------------
-
 
 def readFiles(sentimentDictionary,sentencesTrain,sentencesTest,sentencesNokia):
 
-
     #reading pre-labeled movie reviews and splitting into lines
 
-    posSentences=[]    #initialise list
-    negSentences=[]    #initialise list
+    angrySentences = []
+    disgustedSentences = []
+    fearfulSentences = []
+    happySentences = []
+    sadSentences = []
+    surprisedSentences = []
 
-    txt = open('Data/Movies/rt-polarity.pos', 'r')
-    posSentences = re.split(r'\n', txt.read())
+    txt = open('emotions/angry.txt', 'r')
+    angrySentences = re.split(r'\n', txt.read())
 
-    txt = open('Data/Movies/rt-polarity.neg', 'r')
-    negSentences = re.split(r'\n', txt.read())
+    txt = open('emotions/disgusted.txt', 'r')
+    disgustedSentences = re.split(r'\n', txt.read())
 
-    #reading pre-labeled Nokia reviews and splitting into lines
-    posSentencesNokia=[]    #initialise list
-    negSentencesNokia=[]    #initialise list
+    txt = open('emotions/fearful.txt', 'r')
+    fearfulSentences = re.split(r'\n', txt.read())
 
-    txt = open('nokia-pos.txt', 'r')
-    posSentencesNokia = re.split(r'\n', txt.read())
+    txt = open('emotions/happy.txt', 'r')
+    happySentences = re.split(r'\n', txt.read())
 
-    txt = open('nokia-neg.txt', 'r')
-    negSentencesNokia = re.split(r'\n', txt.read())
+    txt = open('emotions/sad.txt', 'r')
+    sadSentences = re.split(r'\n', txt.read())
+
+    txt = open('emotions/surprised.txt', 'r')
+    surprisedSentences = re.split(r'\n', txt.read())
+
+    allSentences = angrySentences + disgustedSentences + fearfulSentences + \
+                   happySentences + sadSentences + surprisedSentences
  
-    #reading Sentiment Dictionaries
-    posWordList=[]    #initialise list
-    negWordList=[]    #initialise list
-    txt = open('positive-words.txt', 'r')
-    posWordList = re.findall(r"[a-z\-]+", txt.read())
-
-    txt = open('negative-words.txt', 'r')
-    negWordList = re.findall(r"[a-z\-]+", txt.read())
-
     #Create single sentiment dictionary, where words have value 1 if positive and -1 if negative:
 
     sentimentDictionary={} #initialise dictionary
 
-    for i in posWordList:
-        sentimentDictionary[i] = 1
-    for i in negWordList:
-        sentimentDictionary[i] = -1
+    for sentences in angrySentences:
+        sentimentDictionary[sentence] = 'angry'
+
+    for sentences in disgustedSentences:
+        sentimentDictionary[sentence] = 'disgusted'
+
+    for sentences in fearfulSentences:
+        sentimentDictionary[sentence] = 'fearful'
+
+    for sentences in happySentences:
+        sentimentDictionary[sentence] = 'happy'
+
+    for sentences in sadSentences:
+        sentimentDictionary[sentence] = 'sad'
+
+    for sentences in surprisedSentences:
+        sentimentDictionary[sentence] = 'surprised'
 
     #create Training and Test Datsets
-    #We want to test on sentences we haven't trained on, to see how well the model generalses to previously unseen sentences
 
-    #create 90-10 split of training and test data from movie reviews, with sentiment labels    
+    #create 90-10 split of training and test data, with sentiment labels    
     sentenceTrain={}
-    sentimentTest={}    
+    sentimentTest={}
 
-    for i in posSentences:
+    for sentence, sentiment in sentimentDictionary.iteritems():
         if random.randint(1,10)<2:
-            sentencesTest[i]="positive"
+            sentencesTest[sentence] = sentiment
         else:
-            sentencesTrain[i]="positive"
+            sentencesTrain[sentence] = sentiment
 
-    for i in negSentences:
-        if random.randint(1,10)<2:
-            sentencesTest[i]="negative"
-        else:
-            sentencesTrain[i]="negative"
-
-    #create Nokia Datset, with sentiment attached to sentences:
-    for i in posSentencesNokia:
-            sentencesNokia[i]="positive"
-    for i in negSentencesNokia:
-            sentencesNokia[i]="negative"
-    
 #----------------------------End of data initialisation ----------------#
 
 #calculates p(W|Positive), p(W|Negative) and p(W) for all words in training data
