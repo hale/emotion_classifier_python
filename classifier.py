@@ -1,7 +1,18 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import re, random, math, collections, itertools, pdb
 
-#------------- Function Definitions ---------------------
+#  Scott Triglia. Elegant N-gram Generation in Python. (2013-01-20).
+#  URL: http://locallyoptimal.com/blog/2013/01/20/elegant-n-gram-generation-in-python/.
+#  Accessed: 2013-11-21.
+#  Archived by WebCite® at http://www.webcitation.org/6LImC39zN
+def makeNgram(wordList, order):
+    ngramList = []
+    for ngram in zip(*[wordList[i:] for i in range(order)]):
+        ngramList.append('_'.join(ngram))
+    return ngramList
+
+#------------ Function Definitions ---------------------
 
 def readFiles(sentimentDictionary,sentencesTrain,sentencesTest):
 
@@ -31,13 +42,6 @@ def readFiles(sentimentDictionary,sentencesTrain,sentencesTest):
 
     txt = open('emotions/surprised.txt', 'r')
     surprisedSentences = re.split(r'\n', txt.read())
-
-    allSentences = angrySentences + disgustedSentences + fearfulSentences + \
-                   happySentences + sadSentences + surprisedSentences
-
-    #Create single sentiment dictionary, where words have value 1 if positive and -1 if negative:
-
-    sentimentDictionary={} #initialise dictionary
 
     for sentence in angrySentences:
         sentimentDictionary[sentence] = "angry"
@@ -104,18 +108,11 @@ def trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
 
         wordList = re.findall(r"[\w']+", sentence) # get word list
 
-        #TO DO:
-        #Populate bigramList by concatenating adjacent words in the sentence.
-        #You might want to seperate the words by _ for readability, so bigrams such as:
-        #You_might, might_want, want_to, to_seperate
+        unigramList = wordList
+        bigramList = makeNgram(wordList, 2)
+        trigramList = makeNgram(wordList, 3)
 
-        bigramList=[] #initialise bigramList
-        bigramList.append('<sen>_' + wordList[0]) # add start of sentence
-        for bigram in zip(wordList, wordList[1:]):
-            bigramList.append(bigram[0] + '_' + bigram[1])
-        bigramList.append(wordList[-1] + '</sen>') # add end of sentence
-
-        for word in bigramList: # now calculate over bigrams
+        for word in (bigramList + unigramList + trigramList): # now calculate over bigrams
             allWordsTot += 1 # keeps count of total words in dataset
             if not dictionary.has_key(word):
                 dictionary[word] = 1
@@ -161,16 +158,28 @@ def trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
         #do some smoothing so that minimum count of a word is 1
         if not freqAngry.has_key(word):
             freqAngry[word] = 1
+        else:
+            freqAngry[word] += 1
         if not freqDisgusted.has_key(word):
             freqDisgusted[word] = 1
+        else:
+            freqDisgusted[word] += 1
         if not freqFearful.has_key(word):
             freqFearful[word] = 1
+        else:
+            freqFearful[word] += 1
         if not freqHappy.has_key(word):
             freqHappy[word] = 1
+        else:
+            freqHappy[word] += 1
         if not freqSad.has_key(word):
             freqSad[word] = 1
+        else:
+            freqSad[word] += 1
         if not freqSurprised.has_key(word):
             freqSurprised[word] = 1
+        else:
+            freqSurprised[word] += 1
 
         # Calculate p(word|angry)
         pWordAngry[word] = freqAngry[word] / float(angryWordsTot)
@@ -197,22 +206,6 @@ def trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
 
 #---------------------------End Training ----------------------------------
 
-#Print out n most useful predictors
-def mostUseful(pWordPos, pWordNeg, pWord, n):
-    predictPower={}
-    for word in pWord:
-        if pWordNeg[word]<0.0000001:
-            predictPower=1000000000
-        else:
-            predictPower[word]=pWordPos[word] / pWordNeg[word]
-
-    sortedPower = sorted(predictPower, key=predictPower.get)
-    head, tail = sortedPower[:n], sortedPower[len(predictPower)-n:]
-    print "NEGATIVE:"
-    print head
-    print "\nPOSITIVE:"
-    print tail
-
 #implement naive bayes algorithm
 #INPUTS:
 #  sentencesTest is a dictonary with sentences associated with sentiment
@@ -223,8 +216,7 @@ def mostUseful(pWordPos, pWordNeg, pWord, n):
 #  pWord is dictionary storing p(word)
 #  pPos is a real number containing the fraction of positive reviews in the dataset
 def testBayes(sentencesTest, dataName, pWordAngry, pWordDisgusted,
-        pWordFearful, pWordHappy, pWordSad, pWordSurprise, pWord,
-        pAngry, pDisgusted, pFearful, pHappy, pSad, pSurprised):
+        pWordFearful, pWordHappy, pWordSad, pWordSurprise, pWord):
 
     #These variables will store results (you do not need them)
     total=0
@@ -252,86 +244,70 @@ def testBayes(sentencesTest, dataName, pWordAngry, pWordDisgusted,
 
         wordList = re.findall(r"[\w']+", sentence)#collect all words
 
-        #TO DO: Exactly what you did in the training function:
-        #Populate bigramList by concatenating adjacent words in the sentence.
+        unigramList = wordList
+        bigramList = makeNgram(wordList, 2)
+        trigramList = makeNgram(wordList, 3)
 
-        bigramList=[] #initialise bigramList
-        bigramList.append('<sen>_' + wordList[0]) # add start of sentence
-        for bigram in zip(wordList, wordList[1:]):
-            bigramList.append(bigram[0] + '_' + bigram[1])
-        bigramList.append(wordList[-1] + '</sen>') # add end of sentence
+        pAngry = pDisgusted = pFearful = pHappy = pSad = pSurprised = 0.16
 
-
-        for word in bigramList:
+        for word in (trigramList + bigramList + unigramList):
             if pWord.has_key(word):
                 if pWord[word]>0.00000001:
-                    #repeated multiplication can make pPos and pNegW very small
-                    #So I multiply them by a large number to keep the arithmatic
-                    #sensible. It doesn't change the maths when you
-                    #calculate "prob"
-                    pAngry *=pWordAngry[word]*100000
-                    pDisgusted *=pWordDisgusted[word]*100000
-                    pFearful *=pWordFearful[word]*100000
-                    pHappy *=pWordHappy[word]*100000
-                    pSad *=pWordSad[word]*100000
-                    pSurprised *=pWordSurprised[word]*100000
+                    pAngry *=pWordAngry[word]*10000
+                    pDisgusted *=pWordDisgusted[word]*10000
+                    pFearful *=pWordFearful[word]*10000
+                    pHappy *=pWordHappy[word]*10000
+                    pSad *=pWordSad[word]*10000
+                    pSurprised *=pWordSurprised[word]*10000
 
         total+=1
 
         totalProb = float(pAngry + pDisgusted + pFearful + pHappy + pSad + pSurprised)
-        threshold = 0.5
+        if totalProb == 0:
+          totalProb = 0.00000001
+        threshold = 0.166
+        prob = 0
         if sentiment=="angry":
             prob=pAngry/totalProb
             totalAngry+=1
             if prob>=threshold:
                 correct+=1
                 correctAngry+=1
-            else:
-                correct+=0
         if sentiment=="disgusted":
             prob=pDisgusted/totalProb
             totalDisgusted+=1
             if prob>=threshold:
                 correct+=1
                 correctDisgusted+=1
-            else:
-                correct+=0
         if sentiment=="fearful":
             prob=pFearful/totalProb
             totalFearful+=1
             if prob>=threshold:
                 correct+=1
                 correctFearful+=1
-            else:
-                correct+=0
         if sentiment=="happy":
             prob=pHappy/totalProb
             totalHappy+=1
             if prob>=threshold:
                 correct+=1
                 correctHappy+=1
-            else:
-                correct+=0
         if sentiment=="sad":
             prob=pSad/totalProb
             totalSad+=1
             if prob>=threshold:
                 correct+=1
                 correctSad+=1
-            else:
-                correct+=0
         if sentiment=="surprised":
             prob=pSurprised/totalProb
             totalSurprised+=1
             if prob>=threshold:
                 correct+=1
                 correctSurprised+=1
-            else:
-                correct+=0
 
+
+    print dataName + " Accuracy"
 
     acc=correct/float(total)
-    print dataName + " Accuracy (All)=%0.2f" % acc + " (%d" % correct + "/%d" % total + ")"
 
     accAngry = correctAngry / float(totalAngry)
     accDisgusted = correctDisgusted / float(totalDisgusted)
@@ -340,13 +316,13 @@ def testBayes(sentencesTest, dataName, pWordAngry, pWordDisgusted,
     accSad = correctSad / float(totalSad)
     accSurprised = correctSurprised / float(totalSurprised)
 
-    print dataName + " Accuracy (Angry)=%0.2f" % accAngry + " (%d" % correctAngry + "/%d" % totalAngry + ")"
-    print dataName + " Accuracy (Disgusted)=%0.2f" % accDisgusted + " (%d" % correctDisgusted + "/%d" % totalDisgusted + ")"
-    print dataName + " Accuracy (Fearful)=%0.2f" % accFearful + " (%d" % correctFearful + "/%d" % totalFearful + ")"
-    print dataName + " Accuracy (Happy)=%0.2f" % accHappy + " (%d" % correctHappy + "/%d" % totalHappy + ")"
-    print dataName + " Accuracy (Sad)=%0.2f" % accSad + " (%d" % correctSad + "/%d" % totalSad + ")"
-    print dataName + " Accuracy (Surprised)=%0.2f" % accSurprised + " (%d" % correctSurprised + "/%d" % totalSurprised + ")"
-
+    print "  (All)=%0.2f" % acc + " (%d" % correct + "/%d" % total + ")"
+    print "  (Angry)=%0.2f" % accAngry + " (%d" % correctAngry + "/%d" % totalAngry + ")"
+    print "  (Disgusted)=%0.2f" % accDisgusted + " (%d" % correctDisgusted + "/%d" % totalDisgusted + ")"
+    print "  (Fearful)=%0.2f" % accFearful + " (%d" % correctFearful + "/%d" % totalFearful + ")"
+    print "  (Happy)=%0.2f" % accHappy + " (%d" % correctHappy + "/%d" % totalHappy + ")"
+    print "  (Sad)=%0.2f" % accSad + " (%d" % correctSad + "/%d" % totalSad + ")"
+    print "  (Surprised)=%0.2f" % accSurprised + " (%d" % correctSurprised + "/%d" % totalSurprised + ")"
 
 #---------- Main Script --------------------------
 
@@ -373,10 +349,12 @@ trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
 
 #run naive bayes classifier on datasets
 print "Naive Bayes"
-testBayes(sentencesTrain,  "Sentences (Train Data)\t", pWordAngry,
+testBayes(sentencesTrain,  "Train", pWordAngry,
         pWordDisgusted, pWordFearful, pWordHappy, pWordSad,
-        pWordSurprised, pWord, 0.166, 0.166, 0.166, 0.166, 0.166, 0.166)
+        pWordSurprised, pWord)
 
-testBayes(sentencesTest,  "Sentences (Test Data)\t", pWordAngry,
+print
+
+testBayes(sentencesTest,  "Test", pWordAngry,
         pWordDisgusted, pWordFearful, pWordHappy, pWordSad,
-        pWordSurprised, pWord, 0.166, 0.166, 0.166, 0.166, 0.166, 0.166)
+        pWordSurprised, pWord)
