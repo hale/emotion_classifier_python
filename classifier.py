@@ -34,32 +34,32 @@ def readFiles(sentimentDictionary,sentencesTrain,sentencesTest,sentencesNokia):
 
     allSentences = angrySentences + disgustedSentences + fearfulSentences + \
                    happySentences + sadSentences + surprisedSentences
- 
+
     #Create single sentiment dictionary, where words have value 1 if positive and -1 if negative:
 
     sentimentDictionary={} #initialise dictionary
 
     for sentences in angrySentences:
-        sentimentDictionary[sentence] = 'angry'
+        sentimentDictionary[sentence] = "angry"
 
     for sentences in disgustedSentences:
-        sentimentDictionary[sentence] = 'disgusted'
+        sentimentDictionary[sentence] = "disgusted"
 
     for sentences in fearfulSentences:
-        sentimentDictionary[sentence] = 'fearful'
+        sentimentDictionary[sentence] = "fearful"
 
     for sentences in happySentences:
-        sentimentDictionary[sentence] = 'happy'
+        sentimentDictionary[sentence] = "happy"
 
     for sentences in sadSentences:
-        sentimentDictionary[sentence] = 'sad'
+        sentimentDictionary[sentence] = "sad"
 
     for sentences in surprisedSentences:
-        sentimentDictionary[sentence] = 'surprised'
+        sentimentDictionary[sentence] = "surprised"
 
     #create Training and Test Datsets
 
-    #create 90-10 split of training and test data, with sentiment labels    
+    #create 90-10 split of training and test data, with sentiment labels
     sentenceTrain={}
     sentimentTest={}
 
@@ -71,26 +71,49 @@ def readFiles(sentimentDictionary,sentencesTrain,sentencesTest,sentencesNokia):
 
 #----------------------------End of data initialisation ----------------#
 
+    angry
+    disgusted
+    fearful
+    happy
+    sad
+    surprised
+
 #calculates p(W|Positive), p(W|Negative) and p(W) for all words in training data
-def trainBayes(sentencesTrain, pWordPos, pWordNeg, pWord):
-    posFeatures = [] # [] initialises a list [array]
-    negFeatures = [] 
-    freqPositive = {} # {} initialises a dictionary [hash function]
-    freqNegative = {}
+def trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
+        pWordHappy, pWordSad, pWordSusprised, pWord):
+
+    angryFeatures = []
+    disgustedFeatures = []
+    fearfulFeatures = []
+    happyFeatures = []
+    sadFeatures = []
+    surprisedFeatures = []
+
+    freqAngry = {}
+    freqDisgusted = {}
+    freqFearful = {}
+    freqHappy = {}
+    freqSad = {}
+    freqSurprised = {}
+
     dictionary = {}
-    posWordsTot = 0
-    negWordsTot = 0
+
     allWordsTot = 0
-    
+    angryWordsTot = 0
+    disgustedWordsTot = 0
+    fearfulWordsTot = 0
+    happyWordsTot = 0
+    sadWordsTot = 0
+    surprisedWordsTot = 0
+
     #iterate through each sentence/sentiment pair in the training data
     for sentence, sentiment in sentencesTrain.iteritems():
         wordList = re.findall(r"[\w']+", sentence) # get word list
-        
 
         #TO DO:
         #Populate bigramList by concatenating adjacent words in the sentence.
         #You might want to seperate the words by _ for readability, so bigrams such as:
-        #You_might, might_want, want_to, to_seperate.... 
+        #You_might, might_want, want_to, to_seperate
 
         bigramList=[] #initialise bigramList
 
@@ -98,38 +121,81 @@ def trainBayes(sentencesTrain, pWordPos, pWordNeg, pWord):
             allWordsTot += 1 # keeps count of total words in dataset
             if not dictionary.has_key(word):
                 dictionary[word] = 1
-            if sentiment=="positive":
-                posWordsTot += 1 # keeps count of total words in positive class
+            if sentiment=="angry":
+                angryWordsTot += 1
+                if not freqAngry.has_key(word):
+                    freqAngry[word] = 1
+                else:
+                    freqAngry[word] += 1
+            if sentiment=="disgusted":
+                disgustedWordsTot += 1
+                if not freqDisgusted.has_key(word):
+                    freqDisgusted[word] = 1
+                else:
+                    freqDisgusted[word] += 1
+            if sentiment=="fearful":
+                fearfulWordsTot += 1
+                if not freqFearful.has_key(word):
+                    freqFearful[word] = 1
+                else:
+                    freqFearful[word] += 1
+            if sentiment=="happy":
+                happyWordsTot += 1
+                if not freqHappy.has_key(word):
+                    freqHappy[word] = 1
+                else:
+                    freqHappy[word] += 1
+            if sentiment=="sad":
+                sadWordsTot += 1
+                if not freqSad.has_key(word):
+                    freqSad[word] = 1
+                else:
+                    freqSad[word] += 1
+            if sentiment=="surprised":
+                surprisedWordsTot += 1
+                if not freqSurprised.has_key(word):
+                    freqSurprised[word] = 1
+                else:
+                    freqSurprised[word] += 1
 
-                #keep count of each word in positive context
-                if not freqPositive.has_key(word):
-                    freqPositive[word] = 1
-                else:
-                    freqPositive[word] += 1    
-            else:
-                negWordsTot+=1 # keeps count of total words in negative class
-                
-                #keep count of each word in positive context
-                if not freqNegative.has_key(word):
-                    freqNegative[word] = 1
-                else:
-                    freqNegative[word] += 1
 
     for word in dictionary:
         #do some smoothing so that minimum count of a word is 1
-        if not freqNegative.has_key(word):
-            freqNegative[word] = 1
-        if not freqPositive.has_key(word):
-            freqPositive[word] = 1
+        if not freqAngry.has_key(word):
+            freqAngry[word] = 1
+        if not freqDisgusted.has_key(word):
+            freqDisgusted[word] = 1
+        if not freqFearful.has_key(word):
+            freqFearful[word] = 1
+        if not freqHappy.has_key(word):
+            freqHappy[word] = 1
+        if not freqSad.has_key(word):
+            freqSad[word] = 1
+        if not freqSurprised.has_key(word):
+            freqSurprised[word] = 1
 
-        # Calculate p(word|positive)
-        pWordPos[word] = freqPositive[word] / float(posWordsTot) 
+        # Calculate p(word|angry)
+        pWordAngry[word] = freqAngry[word] / float(angryWordsTot)
 
-        # Calculate p(word|negative)
-        pWordNeg[word] = freqNegative[word] / float(negWordsTot)
+        # Calculate p(word|disgusted)
+        pWordDisgusted[word] = freqDisgusted[word] / float(disgustedWordsTot)
+
+        # Calculate p(word|fearful)
+        pWordFearful[word] = freqFearful[word] / float(fearfulWordsTot)
+
+        # Calculate p(word|happy)
+        pWordHappy[word] = freqHappy[word] / float(happyWordsTot)
+
+        # Calculate p(word|sad)
+        pWordSad[word] = freqSad[word] / float(sadWordsTot)
+
+        # Calculate p(word|surprised)
+        pWordSurprised[word] = freqSurprised[word] / float(surprisedWordsTot)
 
         # Calculate p(word)
-        pWord[word] = (freqPositive[word] + freqNegative[word]) / float(allWordsTot) 
+        pWord[word] = (freqAngry[word] + freqDisgusted[word] +
+        freqFearful[word] + freqHappy[word] + freqSad[word] +
+        freqSurprised[word]) / float(allWordsTot)
 
 #---------------------------End Training ----------------------------------
 
@@ -141,7 +207,7 @@ def mostUseful(pWordPos, pWordNeg, pWord, n):
             predictPower=1000000000
         else:
             predictPower[word]=pWordPos[word] / pWordNeg[word]
-            
+
     sortedPower = sorted(predictPower, key=predictPower.get)
     head, tail = sortedPower[:n], sortedPower[len(predictPower)-n:]
     print "NEGATIVE:"
@@ -151,7 +217,7 @@ def mostUseful(pWordPos, pWordNeg, pWord, n):
 
 #implement naive bayes algorithm
 #INPUTS:
-#  sentencesTest is a dictonary with sentences associated with sentiment 
+#  sentencesTest is a dictonary with sentences associated with sentiment
 #  dataName is a string (used only for printing output)
 #  pWordPos is dictionary storing p(word|positive) for each word
 #     i.e., pWordPos["apple"] will return a real value for p("apple"|positive)
@@ -160,7 +226,7 @@ def mostUseful(pWordPos, pWordNeg, pWord, n):
 #  pPos is a real number containing the fraction of positive reviews in the dataset
 def testBayes(sentencesTest, dataName, pWordPos, pWordNeg, pWord, pPos):
     pNeg=1-pPos
-    
+
     #These variables will store results (you do not need them)
     total=0
     correct=0
@@ -168,7 +234,7 @@ def testBayes(sentencesTest, dataName, pWordPos, pWordNeg, pWord, pPos):
     totalneg=0
     correctpos=0
     correctneg=0
-    
+
     #for each sentence, sentiment pair in the dataset
     for sentence, sentiment in sentencesTest.iteritems():
         wordList = re.findall(r"[\w']+", sentence)#collect all words
@@ -186,14 +252,14 @@ def testBayes(sentencesTest, dataName, pWordPos, pWordNeg, pWord, pPos):
                 if pWord[word]>0.00000001:
                     #repeated multiplication can make pPosW and pNegW very small
                     #So I multiply them by a large number to keep the arithmatic
-                    #sensible. It doesn't change the maths when you 
+                    #sensible. It doesn't change the maths when you
                     #calculate "prob"
-                    pPosW *=pWordPos[word]*100000 
+                    pPosW *=pWordPos[word]*100000
                     pNegW *=pWordNeg[word]*100000
-        
-        prob=pPosW/float(pPosW+pNegW)            
+
+        prob=pPosW/float(pPosW+pNegW)
         total+=1
-        
+
         if sentiment=="positive":
             totalpos+=1
             if prob>0.5:
@@ -208,7 +274,7 @@ def testBayes(sentencesTest, dataName, pWordPos, pWordNeg, pWord, pPos):
                 correctneg+=1
             else:
                 correct+=0
- 
+
     acc=correct/float(total)
     print dataName + " Accuracy (All)=%0.2f" % acc + " (%d" % correct + "/%d" % total + ")"
     accpos=correctpos/float(totalpos)
@@ -218,10 +284,10 @@ def testBayes(sentencesTest, dataName, pWordPos, pWordNeg, pWord, pPos):
 
 
 
-# This is a simple classifier that uses a sentiment dictionary to classify 
-# a sentence. For each word in the sentence, if the word is in the positive 
-# dictionary, it adds 1, if it is in the negative dictionary, it subtracts 1. 
-# If the final score is above a threshold, it classifies as "Positive", 
+# This is a simple classifier that uses a sentiment dictionary to classify
+# a sentence. For each word in the sentence, if the word is in the positive
+# dictionary, it adds 1, if it is in the negative dictionary, it subtracts 1.
+# If the final score is above a threshold, it classifies as "Positive",
 # otherwise as "Negative"
 def testDictionary(sentencesTest, dataName, sentimentDictionary, threshold):
     total=0
@@ -236,7 +302,7 @@ def testDictionary(sentencesTest, dataName, sentimentDictionary, threshold):
         for word in Words:
             if sentimentDictionary.has_key(word):
                score+=sentimentDictionary[word]
- 
+
         total+=1
         if sentiment=="positive":
             totalpos+=1
@@ -252,7 +318,7 @@ def testDictionary(sentencesTest, dataName, sentimentDictionary, threshold):
                 correctneg+=1
             else:
                 correct+=0
- 
+
     acc=correct/float(total)
     print dataName + " Accuracy (All)=%0.2f" % acc + " (%d" % correct + "/%d" % total + ")"
     accpos=correctpos/float(totalpos)
@@ -272,23 +338,21 @@ sentencesTest={}
 sentencesNokia={}
 
 #initialise datasets and dictionaries
-readFiles(sentimentDictionary,sentencesTrain,sentencesTest,sentencesNokia)
+readFiles(sentimentDictionary,sentencesTrain,sentencesTest)
 
-pWordPos={} # p(W|Positive)
-pWordNeg={} # p(W|Negative)
-pWord={}    # p(W) 
+pWord={} # p(W)
+pWordAngry={} # p(W|Angry)
+pWordDisgusted={} # p(W|Disgusted)
+pWordFearful={} # p(W|Fearful)
+pWordHappy={} # p(W|Happy)
+pWordSad={} # p(W|Sad)
+pWordSurprised={} # p(W|Surprised)
 
 #build conditional probabilities using training data
-trainBayes(sentencesTrain, pWordPos, pWordNeg, pWord)
-
-# print most useful words
-#mostUseful(pWordPos, pWordNeg, pWord, 20)
+trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
+        pWordHappy, pWordSad, pWordSusprised, pWord)
 
 #run naive bayes classifier on datasets
 print "Naive Bayes"
 testBayes(sentencesTrain,  "Films (Train Data)\t", pWordPos, pWordNeg, pWord,0.5)
 testBayes(sentencesTest,  "Films  (Test Data)\t", pWordPos, pWordNeg, pWord,0.5)
-testBayes(sentencesNokia, "Nokia   (All Data)\t", pWordPos, pWordNeg, pWord,0.7)
-
-
-
