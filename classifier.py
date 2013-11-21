@@ -109,6 +109,10 @@ def trainBayes(sentencesTrain, pWordAngry, pWordDisgusted, pWordFearful,
         #You_might, might_want, want_to, to_seperate
 
         bigramList=[] #initialise bigramList
+        bigramList.append('<sen>_' + wordList[0]) # add start of sentence
+        for bigram in zip(wordList, wordList[1:]):
+            bigramList.append(bigram[0] + '_' + bigram[1])
+        bigramList.append(wordList[-1] + '</sen>') # add end of sentence
 
         for word in bigramList: # now calculate over bigrams
             allWordsTot += 1 # keeps count of total words in dataset
@@ -246,7 +250,11 @@ def testBayes(sentencesTrain, dataName, pWordAngry, pWordDisgusted,
         #TO DO: Exactly what you did in the training function:
         #Populate bigramList by concatenating adjacent words in the sentence.
 
-        bigramList=[]
+        bigramList=[] #initialise bigramList
+        bigramList.append('<sen>_' + wordList[0]) # add start of sentence
+        for bigram in zip(wordList, wordList[1:]):
+            bigramList.append(bigram[0] + '_' + bigram[1])
+        bigramList.append(wordList[-1] + '</sen>') # add end of sentence
 
         for word in bigramList:
             if pWord.has_key(word):
