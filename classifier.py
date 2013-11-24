@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 import re, random, math, collections, itertools, pdb
 
+def sentiments():
+    return ['angry', 'disgusted', 'fearful', 'happy', 'sad', 'surprised']
+
 #  Scott Triglia. Elegant N-gram Generation in Python. (2013-01-20).
 #  URL: http://locallyoptimal.com/blog/2013/01/20/elegant-n-gram-generation-in-python/.
 #  Accessed: 2013-11-21.
@@ -18,58 +21,18 @@ def readFiles(sentimentDictionary,sentencesTrain,sentencesTest):
 
     #reading pre-labeled movie reviews and splitting into lines
 
-    angrySentences = []
-    disgustedSentences = []
-    fearfulSentences = []
-    happySentences = []
-    sadSentences = []
-    surprisedSentences = []
+    sentences = {}
+    for sentiment in sentiments():
+        txt = open('emotions/' + sentiment + '.txt')
+        sentences[sentiment] = re.split(r'\n', txt.read())
 
-    txt = open('emotions/angry.txt', 'r')
-    angrySentences = re.split(r'\n', txt.read())
-
-    txt = open('emotions/disgusted.txt', 'r')
-    disgustedSentences = re.split(r'\n', txt.read())
-
-    txt = open('emotions/fearful.txt', 'r')
-    fearfulSentences = re.split(r'\n', txt.read())
-
-    txt = open('emotions/happy.txt', 'r')
-    happySentences = re.split(r'\n', txt.read())
-
-    txt = open('emotions/sad.txt', 'r')
-    sadSentences = re.split(r'\n', txt.read())
-
-    txt = open('emotions/surprised.txt', 'r')
-    surprisedSentences = re.split(r'\n', txt.read())
-
-    for sentence in angrySentences:
-        sentimentDictionary[sentence] = "angry"
-
-    for sentence in disgustedSentences:
-        sentimentDictionary[sentence] = "disgusted"
-
-    for sentence in fearfulSentences:
-        sentimentDictionary[sentence] = "fearful"
-
-    for sentence in happySentences:
-        sentimentDictionary[sentence] = "happy"
-
-    for sentence in sadSentences:
-        sentimentDictionary[sentence] = "sad"
-
-    for sentence in surprisedSentences:
-        sentimentDictionary[sentence] = "surprised"
-
-    #create Training and Test Datsets
-
-    #create 90-10 split of training and test data, with sentiment labels
-    for sentence, sentiment in sentimentDictionary.iteritems():
-        if random.randint(1,10)<2:
-            sentencesTest[sentence] = sentiment
-        else:
-            sentencesTrain[sentence] = sentiment
-
+    for sentiment,sentences in sentences.iteritems():
+        for sentence in sentences:
+            sentimentDictionary[sentence] = sentiment
+            if random.randint(1,10)<2:
+                sentencesTest[sentence] = sentiment
+            else:
+                sentencesTrain[sentence] = sentiment
 
 #----------------------------End of data initialisation ----------------#
 
