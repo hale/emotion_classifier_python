@@ -13,7 +13,7 @@ def SENTIMENTS():
 # determines the required certainty for a sentence to be classified as that
 # sentiment.
 def THRESHOLD():
-    1.0 / float(len(SENTIMENTS()))
+    return 1.0 / float(len(SENTIMENTS()))
 
 #  Adapted from Scott Triglia. Elegant N-gram Generation in Python. (2013-01-20).
 #  URL: http://locallyoptimal.com/blog/2013/01/20/elegant-n-gram-generation-in-python/.
@@ -109,13 +109,31 @@ def testBayes(sentences, pWord):
 
         wordList = re.findall(r"[\w']+", sentence)#collect all words
 
+        unigramList = []
+        bigramList = []
+        trigramList = []
+
         unigramList = wordList
-        bigramList = makeNgram(wordList, 2)
-        trigramList = makeNgram(wordList, 3)
+
+        if len(wordList) > 1:
+            bigramList = ["<sen>_" + wordList[0]]
+        bigramList = bigramList + makeNgram(wordList, 2)
+        if len(wordList) > 1:
+            bigramList = bigramList + [wordList[-1] + "_</sen>"]
+
+        if len(wordList) > 2:
+            trigramList = trigramList + ["<sen>_<sen>_" + wordList[0]]
+        if len(wordList) > 1:
+            trigramList = trigramList + ["<sen>_" + wordList[0] + "_" + wordList[1]]
+        trigramList = trigramList + makeNgram(wordList, 3)
+        if len(wordList) > 2:
+            trigramList = trigramList + [wordList[-2] + "_" + wordList[-1] + "_</sen>"]
+        if len(wordList) > 1:
+            trigramList = trigramList + [wordList[-1] + "_</sen>_</sen>"]
 
         p = {}
         for s in SENTIMENTS():
-            p[s] = 0.16
+            p[s] = THRESHOLD()
 
         for word in (trigramList + bigramList + unigramList):
             if pWord['all'].has_key(word):
