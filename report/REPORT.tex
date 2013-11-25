@@ -1,0 +1,193 @@
+\documentclass[a4paper,oneside]{article}
+
+%for code snippets
+\usepackage{mathtools,listings}
+
+\lstset{
+  basicstyle=\footnotesize,
+  frame=tb,
+  xleftmargin=.2\textwidth,
+  xrightmargin=.2\textwidth
+}
+
+%\newminted{ruby}{linenos,numbersep=5pt,gobble=2,frame=lines,framesep=2mm,fontsize=\footnotesize}
+%\newminted{console}{linenos,numbersep=5pt,gobble=2,frame=lines,framesep=2mm,fontsize=\footnotesize}
+
+\author{Philip Hale}
+\title{CS4025/CS5057: Continuous Assessment 1 Classifying Emotions}
+
+\begin{document}
+
+\maketitle
+
+\section{Ngram models}
+
+\subsection{Six-way Classification.}
+
+\subsubsection{Ruby}
+
+My first instinct was to classify the emotions using an existing Bayesian
+classification library, to see how this problem has been approached in the
+past.  Using the language I'm most familiar with, I wrote
+\verb!bayesian_classifier.rb!  to perform sentiment analysis on two of the
+emotions files.
+
+Having confirmed that a simple Bayesian classifier is able to produce
+reasonable results, I moved on to producing my own system.
+
+The first attempt used Ruby's support for functional and object-oriented styles
+to create an alternative implementation from the \verb!Sentiment.py! I had worked
+with previously.  Typically, functional and OOP styles of programming give you
+more maintainable and testable code at the expense of speed and simplicity.
+This program is split into various classes and is supported by comprehensive
+unit tests.
+
+A DataSet class is used to abstract concerns such as reading from disk,
+combining the emotions files and partitioning the data into different sets. The
+held-back set of data is split in two (dev- and test-sets) to allow fine-tuning
+of the algorithm without introducing bias.
+
+Probabilities and word counts given specific sentiments are generated
+in a more functional approach, and the results are memoized to reduce
+running-time.  For example,
+\verb!data_set.word_count(word: `help', sentiment: :fearful)! will give the
+number of times `help' occurs in a fearful context.
+
+\subsubsection{Python}
+
+Unfortunately, two major problems led me to abandon this approach and start
+again in Python. Firstly, the system had trouble consistently classifying the
+dataset in under 10 seconds, slowing down development. More importantly, it was
+unable to classify to a satisfactory accuracy. This impeded further
+development, since without a reliable unigram classifier the rest of the
+objectives would be hard to meet.
+
+I cut my losses and started afresh using the Sentiment.py script from the
+practicals.
+
+My approach this time aimed to deviate as little as possible from code which I
+knew could classify correctly. To this end, I replicated the existing code to
+support additional sentiments, almost doubling LOC count. At this point, only
+unigrams were supported.
+
+Some changes had to be made other than just adding extra files. The threshold
+above which a classification is determined to be correct was increased to 0.16.
+In fact, both the threshold and the initially assigned probability for each
+sentiment can be given a starting value of $\frac{1}{6}$ since the
+classification task involves six sentiments.
+
+In order to aid future development and understanding of the script, I reduced
+much of the duplication by nesting the various data structures in dictionaries,
+where the keys are the names of the sentiments. This greatly reduces the amount
+of repetition in the code and means adding or removing sentiments only requires
+changing code in one place. For example, to extend the classifier to support a
+seventh emotion, you would only need to add the datafile and its name to the
+\verb!SENTIMENTS()! function.
+
+\subsection{Combining unigram, bigram and trigram models}
+
+I was interested in adopting some of the functional patterns from initial ruby
+classifier, and so researched functional methods for producing Ngrams. Python
+doesn't quite have the simplicity of \verb!Enumerable#each_cons! for producing
+Ngrams, but a similar result could be achieved with \verb!zip()!.
+
+A few extra lines of code were written to add bigrams and trigrams including
+the beginning-of-sentence and end-of-sentence tags.
+
+The models were combined by summing the different order Ngrams into a single
+list of `words'. This has the effect of approximately tripling the number of
+words in the dictionary. Since the rest of the code is setup to calculate based
+on the size of this overall list, the calculations still work out.
+
+\subsection{System performance}
+
+The system is limited by the unadjusted plus-one smoothing approach used for
+probability discounting. Applying a better discounting algorithm such as Good
+Turing discounting, in combination with a better combination of ngrams such as
+Katz Backoff, would have resulted in a higher overall level of accuracy.
+However, combining the ngrams resulted in a higher overall level of accuracy
+than any individual Ngram regardless of order, suggesting that even a simple
+approach to combining Ngram models yields positive results
+
+Here are the results of running the algorithm on both the training and test set
+of data:
+
+\begin{lstlisting}[caption=Training Set]
+  SENTIMENT  ACCURACY (CORRECT/TOTAL)
+  ALL        0.35     (749/2161)
+  angry      0.99     (144/145)
+  disgusted  1.00     (232/232)
+  fearful    1.00     (154/154)
+  happy      0.00     (3/834)
+  sad        0.03     (12/435)
+  surprised  0.57     (204/361)
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Test Set]
+  SENTIMENT  ACCURACY (CORRECT/TOTAL)
+  ALL        0.25     (59/237)
+  angry      0.93     (14/15)
+  disgusted  0.43     (13/30)
+  fearful    0.77     (23/30)
+  happy      0.02     (2/91)
+  sad        0.07     (2/28)
+  surprised  0.12     (5/43)
+\end{lstlisting}
+
+\section{Classification with WEKA}
+
+\subsection{Creating the ARFF file}
+
+\subsection{System Performance}
+
+
+
+
+
+
+
+
+%Appendix needed for:
+  %* ruby classifier file listing
+  %* rspec output of ruby classifier
+  %* accuracy statements by python classifier
+
+
+%\section{Data partitioning}
+%Source: p. 187 of S\&LP
+
+%\begin{itemize}
+  %\item 10 test set (to evaluate the performance of the algorithm)
+  %\item 10 dev set (to fine-tune the algorithm during development)
+  %\item 80 training set (to `teach' the algorithm).
+%\end{itemize}
+
+%Creating a dev set allows us to make adjustments to the algorithm while
+%ensuring we do not bias towards the test data.
+
+%\section{Testing}
+
+%Comparison with existing implementation: http://classifier.rubyforge.org/
+
+%\begin{listing}[H]
+%\begin{minted}{ruby}
+%classifier = Classifier::Bayes.new "Angry", "Fearful"
+
+%# train
+%File.open('angry.txt').each { |grr| classifier.train_angry grr }
+%File.open('fearful.txt').each { |eek| classifier.train_fearful eek }
+
+%# test
+%classifier.classify "I hate you!"
+%=> Angry
+%classifier.classify "Please don't hurt me"
+%=> Fearful
+%\end{minted}
+%\end{listing}
+
+
+
+
+
+
+\end{document}
