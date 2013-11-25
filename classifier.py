@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import re, random, math, collections, itertools, pdb
+import re, random, math, collections, itertools, pdb, operator
 
 # Gives the emotions we are interested in classifying.  To classify an
 # additional emotion, add its name here and an accompanying data file with some
@@ -25,6 +25,33 @@ def makeNgram(wordList, order):
         ngramList.append('_'.join(ngram))
     return ngramList
 
+def makeNGramList(sentence):
+    wordList = re.findall(r"[\w']+", sentence)#collect all words
+
+    unigramList = []
+    bigramList = []
+    trigramList = []
+
+    unigramList = wordList
+
+    if len(wordList) > 1:
+        bigramList = ["<sen>_" + wordList[0]]
+    bigramList = bigramList + makeNgram(wordList, 2)
+    if len(wordList) > 1:
+        bigramList = bigramList + [wordList[-1] + "_</sen>"]
+
+    if len(wordList) > 2:
+        trigramList = trigramList + ["<sen>_<sen>_" + wordList[0]]
+    if len(wordList) > 1:
+        trigramList = trigramList + ["<sen>_" + wordList[0] + "_" + wordList[1]]
+    trigramList = trigramList + makeNgram(wordList, 3)
+    if len(wordList) > 2:
+        trigramList = trigramList + [wordList[-2] + "_" + wordList[-1] + "_</sen>"]
+    if len(wordList) > 1:
+        trigramList = trigramList + [wordList[-1] + "_</sen>_</sen>"]
+
+    return (unigramList + bigramList + trigramList)
+
 def readFiles(sentencesTrain,sentencesTest):
     for sentiment in SENTIMENTS():
         txt = open('emotions/' + sentiment + '.txt')
@@ -35,14 +62,10 @@ def readFiles(sentencesTrain,sentencesTest):
                 sentencesTrain[sentence] = sentiment
 
 #calculates p(W|Positive), p(W|Negative) and p(W) for all words in training data
-def trainBayes(sentencesTrain, pWord):
-
-    freq = {}
+def trainBayes(sentencesTrain, pWord, freq):
     for sentiment in SENTIMENTS():
         freq[sentiment] = {}
-
     dictionary = {}
-
     wordTotals = { 'all': 0 }
     for sentiment in SENTIMENTS():
         wordTotals[sentiment] = 0
@@ -51,14 +74,7 @@ def trainBayes(sentencesTrain, pWord):
     for sentence, sentiment in sentencesTrain.iteritems():
         if sentence == '':
             continue
-
-        wordList = re.findall(r"[\w']+", sentence)
-
-        unigramList = wordList
-        bigramList = makeNgram(wordList, 2)
-        trigramList = makeNgram(wordList, 3)
-
-        for word in (trigramList + bigramList + unigramList):
+        for word in (makeNGramList(sentence)):
             wordTotals['all'] += 1
             if not dictionary.has_key(word):
                 dictionary[word] = 1
@@ -67,7 +83,6 @@ def trainBayes(sentencesTrain, pWord):
                 freq[sentiment][word] = 1
             else:
                 freq[sentiment][word] += 1
-
 
     # smoothing so min count of each word is 1
     for word in dictionary:
@@ -106,36 +121,11 @@ def testBayes(sentences, pWord):
     for sentence, sentiment in sentences.iteritems():
         if sentence == '':
             continue
-
-        wordList = re.findall(r"[\w']+", sentence)#collect all words
-
-        unigramList = []
-        bigramList = []
-        trigramList = []
-
-        unigramList = wordList
-
-        if len(wordList) > 1:
-            bigramList = ["<sen>_" + wordList[0]]
-        bigramList = bigramList + makeNgram(wordList, 2)
-        if len(wordList) > 1:
-            bigramList = bigramList + [wordList[-1] + "_</sen>"]
-
-        if len(wordList) > 2:
-            trigramList = trigramList + ["<sen>_<sen>_" + wordList[0]]
-        if len(wordList) > 1:
-            trigramList = trigramList + ["<sen>_" + wordList[0] + "_" + wordList[1]]
-        trigramList = trigramList + makeNgram(wordList, 3)
-        if len(wordList) > 2:
-            trigramList = trigramList + [wordList[-2] + "_" + wordList[-1] + "_</sen>"]
-        if len(wordList) > 1:
-            trigramList = trigramList + [wordList[-1] + "_</sen>_</sen>"]
-
         p = {}
         for s in SENTIMENTS():
             p[s] = THRESHOLD()
 
-        for word in (trigramList + bigramList + unigramList):
+        for word in (makeNGramList(sentence)):
             if pWord['all'].has_key(word):
                 for s in SENTIMENTS():
                     if pWord[s][word] > 0.00000001:
@@ -159,12 +149,44 @@ def testBayes(sentences, pWord):
         accuracy[sentiment] = correct[sentiment] /  float(total[sentiment])
         print " (" + sentiment + ")=%0.2f" % accuracy[sentiment] + " (%d" % correct[sentiment] + "/%d" % total[sentiment] + ")"
 
-#---------- Main Script --------------------------
+def mostUseful(pWord, usefulWords, predictors):
+    proportion = {}
+    for sentiment in SENTIMENTS():
+        proportion[sentiment] = {}
+        for word in pWord[sentiment]:
+            proportion[sentiment][word] = pWord[sentiment][word] / pWord['all'][word]
+        topWords = sorted(proportion[sentiment].iteritems(), key=operator.itemgetter(1), reverse=True)[:predictors]
+        usefulWords[sentiment] = topWords
+        usefulWords['all'] += topWords
 
+def writeArff(mostUsefulAll, sentences):
+    f = open("emotion.arff", "w")
+
+    f.write("@relation emotion\n\n")
+    for feature in mostUsefulAll:
+        fName = feature[0]
+        f.write("@attribute \"" + feature[0] + "\" {yes,no}\n")
+    f.write("@attribute emotion {" + ",".join(SENTIMENTS()) + "}\n\n@data\n")
+
+    for sentence,sentiment in sentences.iteritems():
+        if sentence == '':
+            continue
+        nGrams = makeNGramList(sentence)
+        for word in mostUsefulAll:
+            if word[0] in nGrams:
+                f.write('yes, ')
+            else:
+                f.write('no, ')
+        f.write(str(sentiment) + "\n")
+    f.close()
+
+
+#---------- Main Script --------------------------
 
 #initialise datasets and dictionaries
 sentencesTrain={}
 sentencesTest={}
+freq = {}
 pWord={ 'all': {} }
 for sentiment in SENTIMENTS():
     pWord[sentiment] = {}
@@ -173,7 +195,16 @@ for sentiment in SENTIMENTS():
 readFiles(sentencesTrain,sentencesTest)
 
 #build conditional probabilities using training data
-trainBayes(sentencesTrain, pWord)
+trainBayes(sentencesTrain, pWord, freq)
+
+# establish the most predictive patterns
+usefulWords = { 'all': [] }
+for sentiment in SENTIMENTS():
+    usefulWords[sentiment] = []
+
+mostUseful(pWord, usefulWords, 100)
+
+writeArff(usefulWords['all'], sentencesTrain)
 
 #run naive bayes classifier on datasets
 print "Naive Bayes"
