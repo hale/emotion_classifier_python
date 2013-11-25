@@ -1,7 +1,8 @@
 \documentclass[a4paper,oneside]{article}
 
 %for code snippets
-\usepackage{mathtools,listings}
+\usepackage[]{mathtools,listings,minted}
+\usepackage[toc,page]{appendix}
 
 \lstset{
   basicstyle=\footnotesize,
@@ -10,8 +11,6 @@
   xrightmargin=.2\textwidth
 }
 
-%\newminted{ruby}{linenos,numbersep=5pt,gobble=2,frame=lines,framesep=2mm,fontsize=\footnotesize}
-%\newminted{console}{linenos,numbersep=5pt,gobble=2,frame=lines,framesep=2mm,fontsize=\footnotesize}
 
 \author{Philip Hale}
 \title{CS4025/CS5057: Continuous Assessment 1 Classifying Emotions}
@@ -20,7 +19,9 @@
 
 \maketitle
 
-\section{Ngram models}
+\tableofcontents
+
+\section{NGram models}
 
 \subsection{Six-way Classification.}
 
@@ -36,22 +37,21 @@ Having confirmed that a simple Bayesian classifier is able to produce
 reasonable results, I moved on to producing my own system.
 
 The first attempt used Ruby's support for functional and object-oriented styles
-to create an alternative implementation from the \verb!Sentiment.py! I had worked
-with previously.  Typically, functional and OOP styles of programming give you
-more maintainable and testable code at the expense of speed and simplicity.
-This program is split into various classes and is supported by comprehensive
-unit tests.
+to create an alternative implementation from the \verb!Sentiment.py! I had
+worked with previously.  Typically, functional and OOP styles of programming
+give you more maintainable and testable code at the expense of speed and
+simplicity.  This program is split into various classes and is supported by
+comprehensive unit tests.
 
 A DataSet class is used to abstract concerns such as reading from disk,
 combining the emotions files and partitioning the data into different sets. The
 held-back set of data is split in two (dev- and test-sets) to allow fine-tuning
 of the algorithm without introducing bias.
 
-Probabilities and word counts given specific sentiments are generated
-in a more functional approach, and the results are memoized to reduce
-running-time.  For example,
-\verb!data_set.word_count(word: `help', sentiment: :fearful)! will give the
-number of times `help' occurs in a fearful context.
+Probabilities and word counts given specific sentiments are generated in a more
+functional approach, and the results are memoized to reduce running-time.  For
+example, \verb!data_set.word_count(word: `help', sentiment: :fearful)! will
+give the number of times `help' occurs in a fearful context.
 
 \subsubsection{Python}
 
@@ -86,15 +86,15 @@ seventh emotion, you would only need to add the datafile and its name to the
 
 \subsection{Combining unigram, bigram and trigram models}
 
-I was interested in adopting some of the functional patterns from initial ruby
-classifier, and so researched functional methods for producing Ngrams. Python
-doesn't quite have the simplicity of \verb!Enumerable#each_cons! for producing
-Ngrams, but a similar result could be achieved with \verb!zip()!.
+I was interested in adopting some of the functional patterns from my initial
+ruby classifier, and so researched functional methods for producing NGrams.
+Python doesn't quite have the simplicity of \verb!Enumerable#each_cons! for
+producing NGrams, but a similar result could be achieved with \verb!zip()!.
 
 A few extra lines of code were written to add bigrams and trigrams including
 the beginning-of-sentence and end-of-sentence tags.
 
-The models were combined by summing the different order Ngrams into a single
+The models were combined by summing the different order NGrams into a single
 list of `words'. This has the effect of approximately tripling the number of
 words in the dictionary. Since the rest of the code is setup to calculate based
 on the size of this overall list, the calculations still work out.
@@ -103,11 +103,11 @@ on the size of this overall list, the calculations still work out.
 
 The system is limited by the unadjusted plus-one smoothing approach used for
 probability discounting. Applying a better discounting algorithm such as Good
-Turing discounting, in combination with a better combination of ngrams such as
+Turing discounting, in combination with a better combination of NGrams such as
 Katz Backoff, would have resulted in a higher overall level of accuracy.
-However, combining the ngrams resulted in a higher overall level of accuracy
-than any individual Ngram regardless of order, suggesting that even a simple
-approach to combining Ngram models yields positive results
+However, combining the NGrams resulted in a higher overall level of accuracy
+than any individual NGram regardless of order, suggesting that even a simple
+approach to combining NGram models yields positive results
 
 Here are the results of running the algorithm on both the training and test set
 of data:
@@ -138,56 +138,60 @@ of data:
 
 \subsection{Creating the ARFF file}
 
+The ARFF file is generated in a separate subroutine to be run after the
+classification task.  It requires pre-processing the words (strictly speaking
+NGrams) which are most common in the training data, as a proportion of the
+sentiments they are found in. This function, \verb!mostUseful()!, takes as
+arguments the pWord values generated in the training step, and the number of
+`top' results to return. Higher numbers give a larger number of features.
+
+A separate function is given to write the actual ARFF file, using this
+mostUseful data structure. Since computing the data lines for the ARFF file was
+going to require generating NGrams again, the code for turning a sentence into
+a large set of uni-, bi- and tri-grams was extracted into a separate method.
+
+Writing the ARFF file takes place in two stages.  First, the list of attributes
+is generated and written.  These are the $xy$ most `influential' NGrams in the
+data set, where $x$ is the specified number of predictors and $y$ the number of
+sentiments. In order to produce a total of 600 attributes for a 6-way
+classification task, $x$ is set to 100. The attribute names are surrounded in
+quotes to allow for punctuation.
+
+Next, the rows of data are written. This requires iterating through the dataset
+and ascertaining if each of the most useful NGrams occur in that sentence.
+There is a `yes' for every useful NGram which appears in the sentence. Finally,
+the known sentiment is appended to the end of each line, allowing us to perform
+cross-validation in WEKA.
+
 \subsection{System Performance}
 
+With a starting size of 120 attributes, the ID3 classifier was only able to
+correctly classify 49\% of all instances in the training set. Increasing the
+attributes count to 600 resulted in an increased successful classification rate
+of 54\%.  Critically though, this increased the time taken to build the model
+in WEKA by more than an order of magnitude, from less than a second to over
+twenty. The time taken to generate the ARFF file is negligible in either case.
 
+WEKA also provides an open-source version of a better decision-tree algorithm
+than ID3, namely C4.5 (J48). However, despite taking even longer to run, it is
+unable to improve on the 54\% accuracy given by ID3.
 
+Since the ARFF file is built from data generated by the trainBayes() function,
+it inherits some of its weaknesses. Improving the manner in which NGrams are
+combined and discounted would likely improve on these results.
 
+\begin{appendices}
+  \section{Python Source}
+  \inputminted[linenos,numbersep=5pt,gobble=0,frame=lines,framesep=2mm,
+    fontsize=\footnotesize]{python}{../classifier.py}
 
+  \section{Functionality of Ruby classifier}
+  \inputminted[linenos,numbersep=5pt,gobble=0,frame=lines,framesep=2mm,
+    fontsize=\footnotesize]{console}{../rspec_output.txt}
 
-
-
-%Appendix needed for:
-  %* ruby classifier file listing
-  %* rspec output of ruby classifier
-  %* accuracy statements by python classifier
-
-
-%\section{Data partitioning}
-%Source: p. 187 of S\&LP
-
-%\begin{itemize}
-  %\item 10 test set (to evaluate the performance of the algorithm)
-  %\item 10 dev set (to fine-tune the algorithm during development)
-  %\item 80 training set (to `teach' the algorithm).
-%\end{itemize}
-
-%Creating a dev set allows us to make adjustments to the algorithm while
-%ensuring we do not bias towards the test data.
-
-%\section{Testing}
-
-%Comparison with existing implementation: http://classifier.rubyforge.org/
-
-%\begin{listing}[H]
-%\begin{minted}{ruby}
-%classifier = Classifier::Bayes.new "Angry", "Fearful"
-
-%# train
-%File.open('angry.txt').each { |grr| classifier.train_angry grr }
-%File.open('fearful.txt').each { |eek| classifier.train_fearful eek }
-
-%# test
-%classifier.classify "I hate you!"
-%=> Angry
-%classifier.classify "Please don't hurt me"
-%=> Fearful
-%\end{minted}
-%\end{listing}
-
-
-
-
-
+  \section{Simple Bayesian Classifier}
+  \inputminted[linenos,numbersep=5pt,gobble=0,frame=lines,framesep=2mm,
+    fontsize=\footnotesize]{ruby}{../bayesian_classifier.rb}
+\end{appendices}
 
 \end{document}

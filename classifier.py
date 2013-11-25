@@ -35,20 +35,20 @@ def makeNGramList(sentence):
     unigramList = wordList
 
     if len(wordList) > 1:
-        bigramList = ["<sen>_" + wordList[0]]
+        bigramList = ["<sen>_"+wordList[0]]
     bigramList = bigramList + makeNgram(wordList, 2)
     if len(wordList) > 1:
-        bigramList = bigramList + [wordList[-1] + "_</sen>"]
+        bigramList = bigramList + [wordList[-1]+"_</sen>"]
 
     if len(wordList) > 2:
-        trigramList = trigramList + ["<sen>_<sen>_" + wordList[0]]
+        trigramList = trigramList + ["<sen>_<sen>_"+wordList[0]]
     if len(wordList) > 1:
-        trigramList = trigramList + ["<sen>_" + wordList[0] + "_" + wordList[1]]
+        trigramList = trigramList + ["<sen>_"+wordList[0]+"_"+ wordList[1]]
     trigramList = trigramList + makeNgram(wordList, 3)
     if len(wordList) > 2:
-        trigramList = trigramList + [wordList[-2] + "_" + wordList[-1] + "_</sen>"]
+        trigramList = trigramList + [wordList[-2]+"_"+wordList[-1]+"_</sen>"]
     if len(wordList) > 1:
-        trigramList = trigramList + [wordList[-1] + "_</sen>_</sen>"]
+        trigramList = trigramList + [wordList[-1]+"_</sen>_</sen>"]
 
     return (unigramList + bigramList + trigramList)
 
@@ -61,7 +61,7 @@ def readFiles(sentencesTrain,sentencesTest):
             else:
                 sentencesTrain[sentence] = sentiment
 
-#calculates p(W|Positive), p(W|Negative) and p(W) for all words in training data
+# Calculate p(W|Positive), p(W|Negative), p(W) for all words in training data.
 def trainBayes(sentencesTrain, pWord, freq):
     for sentiment in SENTIMENTS():
         freq[sentiment] = {}
@@ -99,7 +99,8 @@ def trainBayes(sentencesTrain, pWord, freq):
 
         # p(word|sentiment)
         for sentiment in SENTIMENTS():
-            pWord[sentiment][word] = freq[sentiment][word] / float(wordTotals[sentiment])
+            pWord[sentiment][word] = \
+                freq[sentiment][word] / float(wordTotals[sentiment])
 
         #p(word)
         pWord['all'][word] = freqWordAll / float(wordTotals['all']) 
@@ -144,18 +145,22 @@ def testBayes(sentences, pWord):
     accuracy = {}
     accuracy['all'] = correct['all'] / float(total['all'])
 
-    print " (ALL)=%0.2f" % accuracy['all'] + " (%d" % correct['all'] + "/%d" % total['all'] + ")"
+    print " (ALL)=%0.2f" % accuracy['all'] + \
+            " (%d" % correct['all'] + "/%d" % total['all'] + ")"
     for sentiment in SENTIMENTS():
         accuracy[sentiment] = correct[sentiment] /  float(total[sentiment])
-        print " (" + sentiment + ")=%0.2f" % accuracy[sentiment] + " (%d" % correct[sentiment] + "/%d" % total[sentiment] + ")"
+        print " (" + sentiment + ")=%0.2f" % accuracy[sentiment] + \
+                " (%d" % correct[sentiment] + "/%d" % total[sentiment] + ")"
 
 def mostUseful(pWord, usefulWords, predictors):
     proportion = {}
     for sentiment in SENTIMENTS():
         proportion[sentiment] = {}
         for word in pWord[sentiment]:
-            proportion[sentiment][word] = pWord[sentiment][word] / pWord['all'][word]
-        topWords = sorted(proportion[sentiment].iteritems(), key=operator.itemgetter(1), reverse=True)[:predictors]
+            proportion[sentiment][word] = \
+                    pWord[sentiment][word] / pWord['all'][word]
+        topWords = sorted(proportion[sentiment].iteritems(),
+                key=operator.itemgetter(1), reverse=True)[:predictors]
         usefulWords[sentiment] = topWords
         usefulWords['all'] += topWords
 
@@ -164,7 +169,6 @@ def writeArff(mostUsefulAll, sentences):
 
     f.write("@relation emotion\n\n")
     for feature in mostUsefulAll:
-        fName = feature[0]
         f.write("@attribute \"" + feature[0] + "\" {yes,no}\n")
     f.write("@attribute emotion {" + ",".join(SENTIMENTS()) + "}\n\n@data\n")
 
@@ -179,7 +183,6 @@ def writeArff(mostUsefulAll, sentences):
                 f.write('no, ')
         f.write(str(sentiment) + "\n")
     f.close()
-
 
 #---------- Main Script --------------------------
 

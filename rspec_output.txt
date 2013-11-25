@@ -1,0 +1,58 @@
+classification on real data
+  #classify
+    should classify known fearful-text as fearful
+  #classify_dev_set
+    doesn't crash at runtime
+
+ArrayExtensions#first_percent
+  rounds up
+  supports empty arrays
+  with 0 gives the empty array
+  with 10 gives the first 10% of an array
+    should eq [1]
+  with 100 returns the array
+    should eq [:foo, :bar]
+  graceful degradation
+    treats >100 percentages as 100
+    treats <0 percentages as 0
+
+EmotionClassifier::Classifier
+  should be initialised with some sentiments
+  initialized with data
+    has a training set
+    has a dev-set of data to test against
+    has a held-back set of test data
+  #probability
+    #probability with only word argument
+      gives proportion of that word in the dataset
+    #probability with word and sentiment arguments
+      gives proportion of that word for that sentiment
+
+EmotionClassifier::DataSet
+  #sentences strips the sentence of punctuation and downcases
+  splits the data into 80/10/10 for training/test/dev
+  can give all the data
+  assigns a sentiment to each sentence
+  #with_sentiment gives the sentences with a given sentiment
+  uses unigrams by default
+  #set_ngram_order(3) makes the data set return trigrams
+  unigrams
+    #words gives an array with every word by default
+    #words with sentiment argument gives words in that sentiment
+  bigrams
+    #words gives an array of bigrams from all sentences
+
+EmotionClassifier::Emotion
+  #to_string gives the name of the emotion
+  #negate_to_s gives a string representing the opposite emotion
+  #== is true when emotions have the same name
+
+EmotionClassifier::Ngram
+  #bigrams gives array of bigrams
+  #trigrams gives array of trigrams
+  can give arbitrary numbered n-grams
+  treats word+punctuation as different from word
+  #ngrams works with arrays as well as sentences
+
+Finished in 3.16 seconds
+33 examples, 0 failures
